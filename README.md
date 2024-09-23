@@ -1,0 +1,1 @@
+# plugins-enable-svg-webp-ico-upload
