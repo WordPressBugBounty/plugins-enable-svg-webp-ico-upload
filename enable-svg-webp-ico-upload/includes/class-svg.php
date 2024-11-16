@@ -1,118 +1,55 @@
 <?php
-class ITC_SVG_Upload_Svg{
-    function __construct(){
-		
-	}
+require_once __DIR__ . '/vendor/autoload.php'; 
+use enshrined\svgSanitize\Sanitizer;
 
-	function fl_module_upload_regex( $regex, $type, $ext, $file ){
-		if( $ext == "svg" || $ext == "svgz" ){
-			$regex['photo'] = str_replace( '|png|', '|png|svgz?|', $regex['photo'] );
-		}
-		return $regex;
-	}
+class ITC_SVG_Upload_Svg {
 
-	function fix_svg_thumbnail_size(){
-		echo '<style>.attachment-info .thumbnail img[src$=".svg"],#postimagediv .inside img[src$=".svg"]{width:100%}</style>';
-	}
+    public function __construct() {
+        
+    }
 
-	function wp_generate_attachment_metadata( $metadata, $attachment_id ){
-		if( get_post_mime_type( $attachment_id ) == 'image/svg+xml' ){
-			$svg_path = get_attached_file( $attachment_id );
-			$dimensions = $this->svg_dimensions( $svg_path );
-			$metadata['width'] = $dimensions->width;
-			$metadata['height'] = $dimensions->height;
-		}
-		return $metadata;
-	}
+    // Allow SVG uploads
+    public function secure_svg_allow_uploads( $mime_types ) {
+        $mime_types['svg'] = 'image/svg+xml';
+        return $mime_types;
+    }
 
-	function wp_check_filetype_and_ext( $filetype_ext_data, $file, $filename, $mimes ){
-		if( substr( $filename, -4 ) == '.svg' ){
-			$filetype_ext_data['ext'] = 'svg';
-			$filetype_ext_data['type'] = 'image/svg+xml';
-		}
-		if( substr( $filename, -5 ) == '.svgz' ){
-			$filetype_ext_data['ext'] = 'svgz';
-			$filetype_ext_data['type'] = 'image/svg+xml';
-		}
-		return $filetype_ext_data;
-	}
+    // Sanitize SVG during upload
+    public function secure_svg_sanitize_upload( $upload ) {
+        // Ensure user is authorized (e.g., editors and admins can upload SVG)
+        if (!current_user_can('edit_posts')) { // Checks if user can edit posts (editors, admins)
+            return new WP_Error('permission_error', __('You are not allowed to upload SVG files.'));
+        }
 
-	public function add_svg_support(){
+        // Check the file type
+        $filetype = wp_check_filetype( $upload['file'] );
 
-		function svg_thumbs( $content ){
-			return apply_filters( 'final_output', $content );
-		}
+        if ( 'svg' === $filetype['ext'] && 'image/svg+xml' === $filetype['type'] ) {
+            // Get the raw SVG content
+            $dirty_svg = file_get_contents( $upload['file'] );
 
-		ob_start( 'svg_thumbs' );
+            if ( $dirty_svg ) {
+                $sanitizer = new Sanitizer();
+                // Sanitize the SVG content
+                $clean_svg = $sanitizer->sanitize( $dirty_svg );
 
-		add_filter( 'final_output', array( $this, 'final_output' ) );
-		add_filter( 'wp_prepare_attachment_for_js', array( $this, 'wp_prepare_attachment_for_js' ), 10, 3 );
-	}
+                if ( $clean_svg ) {
+                    // If sanitized, overwrite the original file with clean content
+                    file_put_contents( $upload['file'], $clean_svg );
+                    chmod($upload['file'], 0644); // Secure file permissions
+                } else {
+                    // If sanitization fails, delete the file and return an error
+                    unlink( $upload['file'] );
+                    // Log failed sanitization for tracking
+                    error_log('Failed SVG sanitization: ' . $upload['file']);
+                    return [
+                        'error' => __('SVG sanitization failed. Upload aborted.', 'secure-svg-uploads'),
+                    ];
+                }
+            }
+        }
 
-	function final_output( $content ){
-		$content = str_replace(
-			'<# } else if ( \'image\' === data.type && data.sizes && data.sizes.full ) { #>',
-			'<# } else if ( \'svg+xml\' === data.subtype ) { #>
-				<img class="details-image" src="{{ data.url }}" draggable="false" />
-			<# } else if ( \'image\' === data.type && data.sizes && data.sizes.full ) { #>',
-			$content
-		);
-
-		$content = str_replace(
-			'<# } else if ( \'image\' === data.type && data.sizes ) { #>',
-			'<# } else if ( \'svg+xml\' === data.subtype ) { #>
-				<div class="centered">
-					<img src="{{ data.url }}" class="thumbnail" draggable="false" />
-				</div>
-			<# } else if ( \'image\' === data.type && data.sizes ) { #>',
-			$content
-		);
-
-		return $content;
-	}
-
-	public function add_svg_mime( $mimes = array() ){
-		$mimes['svg'] = 'image/svg+xml';
-		$mimes['svgz'] = 'image/svg+xml';
-		return $mimes;
-	}
-
-	function wp_prepare_attachment_for_js( $response, $attachment, $meta ){
-		if( $response['mime'] == 'image/svg+xml' && empty( $response['sizes'] ) ){
-			$svg_path = get_attached_file( $attachment->ID );
-			if( ! file_exists( $svg_path ) ){
-				$svg_path = $response['url'];
-			}
-			$dimensions = $this->svg_dimensions( $svg_path );
-			$response['sizes'] = array(
-				'full' => array(
-					'url' => $response['url'],
-					'width' => $dimensions->width,
-					'height' => $dimensions->height,
-					'orientation' => $dimensions->width > $dimensions->height ? 'landscape' : 'portrait'
-				)
-			);
-		}
-		return $response;
-	}
-
-	function svg_dimensions( $svg ){
-		$svg = simplexml_load_file( $svg );
-		$width = 0;
-		$height = 0;
-		if( $svg ){
-			$attributes = $svg->attributes();
-			if( isset( $attributes->width, $attributes->height ) ){
-				$width = floatval( $attributes->width );
-				$height = floatval( $attributes->height );
-			}elseif( isset( $attributes->viewBox ) ){
-				$sizes = explode( " ", $attributes->viewBox );
-				if( isset( $sizes[2], $sizes[3] ) ){
-					$width = floatval( $sizes[2] );
-					$height = floatval( $sizes[3] );
-				}
-			}
-		}
-		return (object)array( 'width' => $width, 'height' => $height );
-	}
+        // Return the upload data, whether sanitized or not
+        return $upload;
+    }
 }

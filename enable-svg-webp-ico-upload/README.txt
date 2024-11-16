@@ -4,7 +4,7 @@ Donate link: https://ideastocode.com/
 Tags: SVG, WebP, ico, image, Serve images, nextgen, formats
 Requires at least: 4.7
 Tested up to: 6.6
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -49,6 +49,9 @@ Yes, any new uploads i.e. after the plugin have been installed will show a previ
 
 == Changelog ==
 
+= 1.0.7 =
+* Security fixes
+
 = 1.0.6 =
 * Minor Updates
 
@@ -72,4 +75,4 @@ Yes, any new uploads i.e. after the plugin have been installed will show a previ
 * Initial release.
 
 == Upgrade Notice ==
-Please update to the latest version 1.0.6
+Please update to the latest version 1.0.7 to address all Security Fixes
