@@ -18,36 +18,41 @@ class ITC_SVG_Upload_Svg {
     public function secure_svg_sanitize_upload($upload) {
         // Ensure user is authorized
         if (!current_user_can('upload_files')) {
-            return new WP_Error('permission_error', __('You are not allowed to upload SVG files.'));
+            return new WP_Error('permission_error', __('You are not allowed to upload SVG files.', 'enable-svg-webp-ico-upload'));
         }
 
-        // Check if the uploaded file is an SVG
-        $filetype = wp_check_filetype($upload['name']);
-        if ('svg' !== $filetype['ext'] || 'image/svg+xml' !== $filetype['type']) {
-            return $upload; // Skip non-SVG uploads
+        // Check if the 'name' key exists in the $upload array
+        if (isset($upload['name'])) {
+            $filetype = wp_check_filetype($upload['name']);
+            if ('svg' !== $filetype['ext'] || 'image/svg+xml' !== $filetype['type']) {
+                return $upload; // Skip non-SVG uploads
+            }
+        } else {
+            return $upload;
         }
 
         // Ensure the file size is within limits (e.g., 3MB)
         if ($upload['size'] > 3072 * 1024) {
             unlink($upload['file']);
-            return new WP_Error('file_size_error', __('SVG file is too large.'));
+            return new WP_Error('file_size_error', __('SVG file is too large.', 'enable-svg-webp-ico-upload'));
         }
 
         // Validate the uploaded file is a valid SVG
         $dirty_svg = file_get_contents($upload['file']);
         if (!$dirty_svg) {
             unlink($upload['file']);
-            return new WP_Error('file_read_error', __('Unable to read the uploaded SVG file.'));
+            return new WP_Error('file_read_error', __('Unable to read the uploaded SVG file.', 'enable-svg-webp-ico-upload'));
         }
 
         // Disable XML external entity loading to prevent XXE attacks
+        libxml_use_internal_errors(true);
         libxml_disable_entity_loader(true);
 
         // Parse the SVG content to confirm it is a valid XML file with an <svg> root tag
         $xml = @simplexml_load_string($dirty_svg);
         if ($xml === false || $xml->getName() !== 'svg') {
             unlink($upload['file']);
-            return new WP_Error('invalid_svg', __('The uploaded file is not a valid SVG.'));
+            return new WP_Error('invalid_svg', __('The uploaded file is not a valid SVG.', 'enable-svg-webp-ico-upload'));
         }
 
         // Sanitize the SVG content with a strict whitelist of allowed tags and attributes
@@ -62,6 +67,10 @@ class ITC_SVG_Upload_Svg {
         $sanitizer->removeAllowedAttribute('svg', 'onclick');
         $sanitizer->removeAllowedAttribute('path', 'onload');
         $sanitizer->removeAllowedAttribute('path', 'onclick');
+        
+        // Remove other potentially dangerous attributes such as "style" or any JavaScript attributes
+        $sanitizer->removeAllowedAttribute('svg', 'style');
+        $sanitizer->removeAllowedAttribute('path', 'style');
 
         // Sanitize the SVG file content
         $clean_svg = $sanitizer->sanitize($dirty_svg);
@@ -69,7 +78,7 @@ class ITC_SVG_Upload_Svg {
         if (!$clean_svg) {
             unlink($upload['file']);
             error_log('Failed SVG sanitization for user ID: ' . get_current_user_id());
-            return new WP_Error('sanitize_error', __('SVG sanitization failed. Upload aborted.'));
+            return new WP_Error('sanitize_error', __('SVG sanitization failed. Upload aborted.', 'enable-svg-webp-ico-upload'));
         }
 
         // Overwrite the file with sanitized SVG content

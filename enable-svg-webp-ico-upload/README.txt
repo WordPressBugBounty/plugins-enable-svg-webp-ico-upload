@@ -1,10 +1,10 @@
-=== Enable SVG, WebP & ICO Upload  ===
+=== Enable SVG, WebP, and ICO Upload ===
 Contributors: ideastocode
 Donate link: https://ideastocode.com/
 Tags: SVG, WebP, ico, image, Serve images
 Requires at least: 4.7
 Tested up to: 6.7
-Stable tag: 1.0.9
+Stable tag: 1.1.0
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -49,6 +49,9 @@ Yes, any new uploads i.e. after the plugin have been installed will show a previ
 
 == Changelog ==
 
+= 1.1.0 =
+* Minor fixes
+
 = 1.0.9 =
 * Minor Security fixes
 
@@ -81,4 +84,4 @@ Yes, any new uploads i.e. after the plugin have been installed will show a previ
 * Initial release.
 
 == Upgrade Notice ==
-Please update to the latest version 1.0.9 
+Please update to the latest version 1.1.0 
