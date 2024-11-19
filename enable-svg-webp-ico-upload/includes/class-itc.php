@@ -60,9 +60,7 @@ class ITC_SVG_Upload extends ITC_SVG_Upload_BaseController {
 		if ( isset( $settings['webp'] ) && $settings['webp'] === 1 ) {
 			require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-webp.php';
 			$plugin_webp = new ITC_SVG_Upload_Webp();
-			$this->loader->add_filter( 'wp_check_filetype_and_ext', $plugin_webp, 'webp_file_ext', 10, 4 );
-			$this->loader->add_filter( 'upload_mimes', $plugin_webp, 'webp_file_upload' );
-			$this->loader->add_filter( 'file_is_displayable_image', $plugin_webp, 'preview_webp_thumnail', 10, 2 );
+
 		}
 
 		// for ico
