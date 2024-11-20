@@ -52,8 +52,11 @@ class ITC_SVG_Upload extends ITC_SVG_Upload_BaseController {
 		if ( isset( $settings['svg'] ) && $settings['svg'] === 1 ) {
 			require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-svg.php';
 			$plugin_svg = new ITC_SVG_Upload_Svg();
-			$this->loader->add_filter( 'upload_mimes', $plugin_svg, 'secure_svg_allow_uploads' );
-			$this->loader->add_filter( 'wp_handle_upload', $plugin_svg, 'secure_svg_sanitize_upload' );
+			$this->loader->add_filter('upload_mimes', $plugin_svg, 'add_svg_support');
+			$this->loader->add_filter('wp_handle_upload_prefilter', $plugin_svg, 'sanitize_svg_upload');
+			$this->loader->add_filter('wp_check_filetype_and_ext', $plugin_svg, 'validate_svg_file', 10, 4);
+			$this->loader->add_filter('wp_prepare_attachment_for_js', $plugin_svg, 'display_svg_in_media_library', 10, 3);
+			$this->loader->add_action('admin_head', $plugin_svg, 'add_svg_styles');
 		}
 		
 		// for webp
