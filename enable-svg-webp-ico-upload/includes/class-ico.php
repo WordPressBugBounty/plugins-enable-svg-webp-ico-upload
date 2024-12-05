@@ -12,6 +12,9 @@ class ITC_SVG_Upload_Ico {
      * @return array Updated types array with 'ext' and 'type' for ICO files if valid.
      */
     public function upload_ico_files( $types, $file, $filename, $mimes ) {
+        // Sanitize the filename to prevent potential XSS
+        $filename = sanitize_file_name( $filename );
+
         // Validate the filename for .ico extension
         if ( false !== strpos( strtolower( $filename ), '.ico' ) ) {
             // Check file MIME type and validate the ICO file structure
@@ -44,22 +47,27 @@ class ITC_SVG_Upload_Ico {
 
     /**
      * Validates the ICO file by checking its content structure.
+     * Ensures the file is a valid ICO image and not a malicious file.
      *
      * @param string $file The path to the file being uploaded.
      * @return bool True if the file is a valid ICO, false otherwise.
      */
     private function is_valid_ico( $file ) {
-        // Read the first 4 bytes of the file to check the ICO signature
+        // Open the file in binary mode
         $handle = @fopen( $file, 'rb' );
         if ( $handle === false ) {
             return false;
         }
 
+        // Read the first 4 bytes of the file to check the ICO signature
         $header = fread( $handle, 4 );
         fclose( $handle );
 
         // ICO files start with two null bytes followed by 0x01 and 0x00
-        return $header === "\x00\x00\x01\x00";
+        if ( $header !== "\x00\x00\x01\x00" ) {
+            return false;
+        }
+        return true;
     }
-
 }
+
