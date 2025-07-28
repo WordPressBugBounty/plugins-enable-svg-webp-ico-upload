@@ -3,7 +3,7 @@ Contributors: ideastocode
 Donate link: https://ideastocode.com/
 Tags: SVG, WebP, ico, image, Serve images
 Requires at least: 4.7
-Tested up to: 6.7
+Tested up to: 6.8
 Stable tag: 1.1.2
 Requires PHP: 7.0
 License: GPLv2 or later
@@ -13,9 +13,22 @@ This plugin will enable uploading SVG, WebP & ICO image files to WordPress sites
 
 == Description ==
 
+**Check Our Another Plugin**
+
+- <a href="https://wordpress.org/plugins/disable-email-notification-for-auto-updates" target="_blank">Disable Auto-Update Emails and Block Updates for Plugins, WP Core, and Themes</a>
+- You can also <a href="https://wordpress.org/plugins/disable-email-notification-for-auto-updates/?preview=1" target="_blank">Live Preview It</a>
+
+**Enable SVG, WebP, and ICO Upload**
+
 By default, WordPress does not allow uploading file formats like SVG, WebP, and ICO (in some hostings) citing security reasons. These files are becoming very popular and in fact, are recommended by popular web speed scan platforms like Google PageSpeed Insights or Gtmetrix to resolve the serve images in nextgen formats. Thus, this FREE PLUGIN will enable you to upload these files.
 
 Simply install the plugin and your WordPress website now can easily accept media in SVG, WebP, and ICO format. You will also have an option to disable some or all images format (of the three) as required.
+
+== External services ==
+
+This plugin sanitizes all SVG uploads using a library. If you are using the plugin to upload SVG files, you are giving consent to use this service.  
+This service is provided by 10up: <a href="https://github.com/10up/safe-svg?tab=readme-ov-file" target="_blank">GitHub Repository</a>
+
 
 **Tutorial video**
 
