@@ -72,6 +72,8 @@ class ITC_SVG_Upload extends ITC_SVG_Upload_BaseController {
 			$plugin_ico = new ITC_SVG_Upload_Ico();
 			$this->loader->add_filter( 'wp_check_filetype_and_ext', $plugin_ico, 'upload_ico_files', 10, 4 );
 			$this->loader->add_filter( 'upload_mimes', $plugin_ico, 'ico_files' );
+			$this->loader->add_filter( 'wp_handle_upload_prefilter', $plugin_ico, 'sanitize_upload_filename_prefilter' );			
+
 		}
 	}
 

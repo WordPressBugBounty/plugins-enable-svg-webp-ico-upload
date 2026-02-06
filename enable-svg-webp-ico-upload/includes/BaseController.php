@@ -10,7 +10,7 @@ if( ! class_exists( 'ITC_SVG_Upload_BaseController' ) ) {
 				'name'		=>'itc_svg_upload',
 				'title'		=>'Enable SVG, WebP &amp; ICO Upload',
 				'slug'		=>'itc-svg-upload',
-				'version'	=> ( defined( 'ITC_SVG_UPLOAD_VERSION' ) ) ? ITC_SVG_UPLOAD_VERSION: '1.1.2',
+				'version'	=> ( defined( 'ITC_SVG_UPLOAD_VERSION' ) ) ? ITC_SVG_UPLOAD_VERSION: '1.1.4',
 				'settings'	=>'itc_svg_upload_settings',
 			);
 		}
