@@ -3,8 +3,8 @@ Contributors: ideastocode
 Donate link: https://ideastocode.com/
 Tags: SVG, WebP, ico, image, Serve images
 Requires at least: 4.7
-Tested up to: 6.9
-Stable tag: 1.1.4
+Tested up to: 7.1
+Stable tag: 1.1.5
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -48,6 +48,9 @@ Yes, any new uploads i.e. after the plugin have been installed will show a previ
 1. Backend settings
 
 == Changelog ==
+
+= 1.1.5 =
+* Security fixes
 
 = 1.1.4 =
 * Security fixes

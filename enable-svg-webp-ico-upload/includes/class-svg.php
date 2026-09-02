@@ -54,7 +54,7 @@ class ITC_SVG_Upload_Svg {
         return $upload;
     }
 
-    // Comprehensive SVG file detection
+    // Comprehensive SVG file detection.
     protected function is_svg_file($upload) {
         if (!isset($upload['tmp_name']) || !file_exists($upload['tmp_name'])) {
             return false;
@@ -63,12 +63,13 @@ class ITC_SVG_Upload_Svg {
         $file_name = isset($upload['name']) ? $upload['name'] : '';
         $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
         $file_type = isset($upload['type']) ? $upload['type'] : '';
-        
-        // Check file size first (quick check)
-        if (isset($upload['size']) && $upload['size'] > $this->max_file_size) {
+
+        // Only bother reading file content for names/types that could plausibly
+        // be SVG, to avoid slurping arbitrary large files into memory.
+        if ($file_ext !== 'svg' && $file_ext !== 'svgz' && $file_type !== 'image/svg+xml') {
             return false;
         }
-        
+
         // Read and validate file content
         $file_content = file_get_contents($upload['tmp_name']);
         if ($file_content === false) {
