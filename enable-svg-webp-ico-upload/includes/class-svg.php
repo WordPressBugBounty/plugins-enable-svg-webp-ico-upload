@@ -20,6 +20,7 @@ class ITC_SVG_Upload_Svg {
     protected function init_hooks() {
         add_filter('upload_mimes', array($this, 'add_svg_support'));
         add_filter('wp_handle_upload_prefilter', array($this, 'sanitize_svg_upload'));
+        add_filter('wp_handle_sideload_prefilter', array($this, 'sanitize_svg_upload'));
         add_filter('wp_check_filetype_and_ext', array($this, 'validate_svg_file'), 10, 4);
         add_filter('wp_generate_attachment_metadata', array($this, 'generate_svg_metadata'), 10, 2);
         add_filter('wp_prepare_attachment_for_js', array($this, 'display_svg_in_media_library'), 10, 3);
@@ -38,7 +39,14 @@ class ITC_SVG_Upload_Svg {
 
     // Sanitize SVG during upload with comprehensive security checks
     public function sanitize_svg_upload($upload) {
-        if ($this->is_svg_file($upload)) {
+        // Any file that WILL be stored/served as SVG (by extension or declared type)
+        // must be sanitized or rejected. Never skip based on content detection.
+        if ($this->is_svg_claimed($upload)) {
+            if (!isset($upload['tmp_name']) || !file_exists($upload['tmp_name'])) {
+                $upload['error'] = __('Sorry, this SVG file is not valid or could not be sanitized for security reasons.', 'enable-svg-webp-ico-upload');
+                return $upload;
+            }
+
             // Check file size
             if (isset($upload['size']) && $upload['size'] > $this->max_file_size) {
 				/* translators: %d: Maximum file size in megabytes */
@@ -46,12 +54,43 @@ class ITC_SVG_Upload_Svg {
                 return $upload;
             }
             
-            // Validate and sanitize the SVG file
-            if (!isset($upload['tmp_name']) || !$this->check_and_sanitize_file($upload['tmp_name'])) {
+            // Validate and sanitize the SVG file (rejects non-SVG content)
+            if (!$this->check_and_sanitize_file($upload['tmp_name'])) {
                 $upload['error'] = __('Sorry, this SVG file is not valid or could not be sanitized for security reasons.', 'enable-svg-webp-ico-upload');
             }
         }
         return $upload;
+    }
+
+    // Does the upload present itself as SVG (extension or declared MIME type)?
+    protected function is_svg_claimed($upload) {
+        $file_name = isset($upload['name']) ? $upload['name'] : '';
+        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        $file_type = isset($upload['type']) ? strtolower($upload['type']) : '';
+
+        return in_array($file_ext, array('svg', 'svgz'), true) || $file_type === 'image/svg+xml';
+    }
+
+    // Confirm the document's root element is really <svg> (rejects XHTML etc.)
+    protected function is_svg_root($content) {
+        if (!is_string($content) || $content === '' || !class_exists('DOMDocument')) {
+            return false;
+        }
+
+        $previous = libxml_use_internal_errors(true);
+        $dom      = new DOMDocument();
+        $loaded   = $dom->loadXML($content, LIBXML_NONET);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if (!$loaded || !$dom->documentElement) {
+            return false;
+        }
+
+        $root = $dom->documentElement;
+        $ns   = $root->namespaceURI;
+
+        return $root->localName === 'svg' && ($ns === null || $ns === '' || $ns === 'http://www.w3.org/2000/svg');
     }
 
     // Comprehensive SVG file detection.
@@ -128,16 +167,34 @@ class ITC_SVG_Upload_Svg {
             return false;
         }
 
+        // Handle compressed SVGZ: decompress (size-capped), sanitize, then re-compress
+        $is_gzipped = (strncmp($unclean, "\x1f\x8b", 2) === 0);
+        if ($is_gzipped) {
+            if (!function_exists('gzdecode')) {
+                return false;
+            }
+            $unclean = @gzdecode($unclean, $this->max_file_size);
+            if ($unclean === false || $unclean === '') {
+                return false;
+            }
+        }
+
         // Validate it's actually SVG content
         if (!$this->is_svg_content($unclean)) {
             return false;
         }
 
-        // Configure sanitizer with security settings
         $this->sanitizer->setAllowedTags(new class extends \enshrined\svgSanitize\data\AllowedTags {
             public static function getTags() {
                 $allowed_tags = parent::getTags();
-                return apply_filters('esw_svg_allowed_tags', $allowed_tags);
+                $allowed_tags = apply_filters('esw_svg_allowed_tags', $allowed_tags);
+
+                // Animation elements can rewrite href/xlink:href after sanitization
+                // (e.g. javascript: URLs). Always strip them, even if a filter re-adds them.
+                $blocked = array('animate', 'animatetransform', 'animatemotion', 'animatecolor', 'set');
+                return array_values(array_filter((array) $allowed_tags, function ($tag) use ($blocked) {
+                    return !in_array(strtolower((string) $tag), $blocked, true);
+                }));
             }
         });
 
@@ -157,8 +214,8 @@ class ITC_SVG_Upload_Svg {
             return false;
         }
 
-        // Validate the sanitized content is still SVG
-        if (!$this->is_svg_content($clean)) {
+        // Validate the sanitized content is still SVG, with a real <svg> root element
+        if (!$this->is_svg_content($clean) || !$this->is_svg_root($clean)) {
             return false;
         }
 
@@ -166,8 +223,9 @@ class ITC_SVG_Upload_Svg {
         $backup_path = $file . '.backup';
         copy($file, $backup_path);
 
-        // Save the sanitized SVG file
-        if (file_put_contents($file, $clean) === false) {
+        // Save the sanitized SVG file (re-compress if it was SVGZ)
+        $output = $is_gzipped ? gzencode($clean) : $clean;
+        if ($output === false || file_put_contents($file, $output) === false) {
             return false;
         }
 
